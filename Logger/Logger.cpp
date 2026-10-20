@@ -1,25 +1,16 @@
 #include "Logger.hpp"
 #include "ConsoleColor.hpp"
 #include <iostream>
-#include <iostream>
 #include <iomanip>
 #include <ctime>
 #include <sstream>
 #include <chrono>
 
-std::map<unsigned int, std::string> Logger::m_Registered;
+std::map<unsigned int, std::string> Logger::registered_;
 
-Logger::Logger(/* args */)
+std::string Logger::get_time(const std::string &format)
 {
-}
-
-Logger::~Logger()
-{
-}
-
-std::string Logger::GetTime(std::string format)
-{
-using namespace std::chrono;
+    using namespace std::chrono;
 
     // get current time
     auto now = system_clock::now();
@@ -43,9 +34,9 @@ using namespace std::chrono;
 }
 
 
-void Logger::Log(const std::string &message, unsigned int level)
+void Logger::log(const std::string &message, unsigned int level)
 {
-    std::cerr << Color::Compatibility::Text::LightGray << "[" << Color::Text::Aqua << Color::Formatting::Bold << GetTime("%d-%m-%Y %H:%M:%S") << Color::Reset << Color::Compatibility::Text::LightGray << "] ";
+    std::cerr << Color::Compatibility::Text::LightGray << "[" << Color::Text::Aqua << Color::Formatting::Bold << get_time("%d-%m-%Y %H:%M:%S") << Color::Reset << Color::Compatibility::Text::LightGray << "] ";
     switch (level)
     {
     case Error:
@@ -59,14 +50,14 @@ void Logger::Log(const std::string &message, unsigned int level)
         break;
 
     default:
-        if (m_Registered.count(level))
+        if (registered_.count(level))
         {
-            std::cerr << m_Registered[level] << message << Color::Reset << std::endl;
+            std::cerr << registered_[level] << message << Color::Reset << std::endl;
         }
         break;
     }
 }
-void Logger::Register(const std::string &format, unsigned int index)
+void Logger::register_level(const std::string &format, unsigned int level)
 {
-    m_Registered.insert(std::make_pair(index, format));
+    registered_.insert(std::make_pair(level, format));
 }

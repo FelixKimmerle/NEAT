@@ -1,320 +1,305 @@
 #include "Genome.hpp"
-#include "Logger/Logger.hpp"
-#include <iostream>
+#include "Random.hpp"
 #include <algorithm>
-Genome::Genome(unsigned int p_uiInput, unsigned int p_uiOutput, InnovationManager *p_pInnovManager) : m_pInnovManager(p_pInnovManager), m_uiNumInput(p_uiInput), m_uiNumOutput(p_uiOutput)
-{
-    //m_uiNodes = p_uiInput + p_uiOutput + 1; //1 for Bias
-    for (unsigned int i = 0; i < p_uiInput + p_uiOutput + 1; i++)
-    {
-        m_uiNodes.insert(i);
-    }
-    m_fFitness = rand() / (float)RAND_MAX;
-}
+#include <cmath>
+#include <map>
 
-Genome::~Genome()
+Genome::Genome(unsigned int inputs, unsigned int outputs) : inputs_(inputs), outputs_(outputs)
 {
-}
-
-void Genome::AddGene(unsigned int p_uiFrom, unsigned int p_uiTo, float p_fWeight)
-{
-    unsigned int inumber = m_pInnovManager->Register(p_uiFrom, p_uiTo);
-    if (m_vInnovationIDs.insert(inumber).second)
+    for (unsigned int node = 0; node <= bias_node(); node++)
     {
-        m_uiNodes.insert(p_uiFrom);
-        m_uiNodes.insert(p_uiTo);
-        m_Gens.push_back(Gen(inumber, p_uiFrom, p_uiTo, p_fWeight));
-        m_vInnovGene.insert(std::make_pair(inumber, m_Gens.size() - 1));
-        m_uiParents[p_uiTo].push_back(m_Gens.size() - 1);
+        nodes_.insert(node);
     }
 }
-void Genome::AddNode(unsigned int p_uiID)
-{
-    m_Gens[p_uiID].Disable();
-    unsigned int inumber = m_pInnovManager->Register(m_Gens[p_uiID].From(), *m_uiNodes.end() + 1);
-    m_uiNodes.insert(*m_uiNodes.end() + 1);
-    m_vInnovationIDs.insert(inumber);
-    m_Gens.push_back(Gen(inumber, m_Gens[p_uiID].From(), *m_uiNodes.end(), m_Gens[p_uiID].GetWeight()));
-    m_uiParents[*m_uiNodes.end()].push_back(m_Gens.size() - 1);
-    m_vInnovGene.insert(std::make_pair(inumber, m_Gens.size() - 1));
 
-    inumber = m_pInnovManager->Register(*m_uiNodes.end(), m_Gens[p_uiID].To());
-    m_vInnovationIDs.insert(inumber);
-    m_Gens.push_back(Gen(inumber, *m_uiNodes.end(), m_Gens[p_uiID].To(), 1.0));
-    m_uiParents[m_Gens[p_uiID].To()].push_back(m_Gens.size() - 1);
-    m_vInnovGene.insert(std::make_pair(inumber, m_Gens.size() - 1));
-    Logger::Log("Mutate Node: " + std::to_string(m_Gens[p_uiID].From()) + " -> " + std::to_string(*m_uiNodes.end()) + " -> " + std::to_string(m_Gens[p_uiID].To()), Logger::Information);
-}
-
-std::ostream &operator<<(std::ostream &os, const Genome &genome)
+Genome::Genome(unsigned int inputs, unsigned int outputs, InnovationManager &innovations, const Config &config)
+    : Genome(inputs, outputs)
 {
-    os << "[ Genes: " << genome.m_Gens.size() << " Nodes: " << genome.m_uiNodes.size() << " Fitness: " << genome.m_fFitness << std::endl;
-    for (auto x = genome.m_Gens.begin(); x != genome.m_Gens.end(); x++)
+    auto connect = [&](unsigned int from, unsigned int to) {
+        insert_gene(Gen(innovations.connection_innovation(from, to), from, to, Random::uniform(-config.weight_range, config.weight_range)));
+    };
+    for (unsigned int to = inputs_; to < inputs_ + outputs_; to++)
     {
-        os << "\t" << *x << std::endl;
-    }
-    os << "]" << std::endl;
-    return os;
-}
-
-unsigned int RandomNumber()
-{
-    return (rand() % 100) + 1;
-}
-
-float RandomFloat()
-{
-    return rand() / (float)RAND_MAX;
-}
-
-bool Genome::Check(unsigned int p_uiFrom, unsigned int p_uiTo)
-{
-    if (p_uiFrom >= m_uiNumInput && p_uiFrom < m_uiNumInput + m_uiNumOutput)
-    {
-        Logger::Log(std::to_string(p_uiFrom) + " is an output node", Logger::Information);
-        return false;
-    }
-    if (p_uiTo < m_uiNumInput)
-    {
-        Logger::Log(std::to_string(p_uiTo) + " is an input node", Logger::Information);
-        return false;
-    }
-    if (p_uiTo == m_uiNumInput + m_uiNumOutput)
-    {
-        Logger::Log(std::to_string(p_uiTo) + " is the bias node", Logger::Information);
-        return false;
-    }
-    if (CheckParents(p_uiFrom, p_uiTo))
-    {
-        Logger::Log(std::to_string(p_uiFrom) + " -> " + std::to_string(p_uiTo) + " Create a Circle", Logger::Warning);
-        return false;
-    }
-    return true;
-}
-
-void Genome::Mutate()
-{
-    if (RandomNumber() < 80 && m_Gens.size() > 0)
-    {
-        if (RandomNumber() < 90)
+        for (unsigned int from = 0; from < inputs_; from++)
         {
-            m_Gens[rand() % m_Gens.size()].AdjustWeight((RandomFloat() * 2.f - 1.f) / 20.f);
+            connect(from, to);
         }
-        else
+        connect(bias_node(), to);
+    }
+}
+
+unsigned int Genome::enabled_gene_count() const
+{
+    return std::count_if(genes_.begin(), genes_.end(), [](const Gen &gene) { return gene.is_enabled(); });
+}
+
+std::vector<unsigned int> Genome::topological_order() const
+{
+    // Kahn's algorithm. Enabled connections never form a cycle, so every node ends up in the order.
+    std::map<unsigned int, unsigned int> incoming;
+    for (unsigned int node : nodes_)
+    {
+        incoming[node] = 0;
+    }
+    for (const Gen &gene : genes_)
+    {
+        if (gene.is_enabled())
         {
-            m_Gens[rand() % m_Gens.size()].SetWeight(RandomFloat() * 2.f - 1.f);
+            incoming[gene.to()]++;
         }
     }
-    else
-    {
-        if (RandomNumber() < 5)
-        {
 
-            unsigned int a = 0;
-            unsigned int b = 0;
-            while (a == b)
+    std::vector<unsigned int> order;
+    for (const auto &[node, count] : incoming)
+    {
+        if (count == 0)
+        {
+            order.push_back(node);
+        }
+    }
+    for (std::size_t i = 0; i < order.size(); i++)
+    {
+        for (const Gen &gene : genes_)
+        {
+            if (gene.is_enabled() && gene.from() == order[i] && --incoming[gene.to()] == 0)
             {
-                a = *std::next(m_uiNodes.begin(), rand() % (m_uiNodes.size()));
-                b = *std::next(m_uiNodes.begin(), rand() % (m_uiNodes.size()));
-            }
-            Logger::Log("Try: " + std::to_string(a) + " -> " + std::to_string(b), Logger::Information);
-            if (Check(a, b))
-            {
-                AddGene(a, b);
-                Logger::Log("Mutate Gene: " + std::to_string(a) + " -> " + std::to_string(b), Logger::Information);
+                order.push_back(gene.to());
             }
         }
-        if (RandomNumber() < 3 && m_Gens.size() > 0)
-        {
-            AddNode(rand() % m_Gens.size());
-        }
     }
+    return order;
 }
 
-bool Genome::CheckParents(unsigned int p_uiNode, unsigned int p_uiTo)
+void Genome::insert_gene(Gen gene)
 {
-    for (auto i = m_uiParents[p_uiNode].begin(); i != m_uiParents[p_uiNode].end(); i++)
+    auto position = std::lower_bound(genes_.begin(), genes_.end(), gene.innovation(),
+                                     [](const Gen &g, unsigned int innovation) { return g.innovation() < innovation; });
+    if (position != genes_.end() && position->innovation() == gene.innovation())
     {
-        if (m_Gens[*i].From() == p_uiTo)
+        return;
+    }
+    if (gene.is_enabled() && creates_cycle(gene.from(), gene.to()))
+    {
+        gene.set_enabled(false);
+    }
+    nodes_.insert(gene.from());
+    nodes_.insert(gene.to());
+    genes_.insert(position, gene);
+}
+
+bool Genome::has_connection(unsigned int from, unsigned int to) const
+{
+    return std::any_of(genes_.begin(), genes_.end(),
+                       [&](const Gen &gene) { return gene.from() == from && gene.to() == to; });
+}
+
+bool Genome::creates_cycle(unsigned int from, unsigned int to) const
+{
+    // The new connection closes a cycle if 'from' is already reachable from 'to'.
+    std::vector<unsigned int> stack{to};
+    std::set<unsigned int> visited;
+    while (!stack.empty())
+    {
+        unsigned int node = stack.back();
+        stack.pop_back();
+        if (node == from)
         {
             return true;
         }
-        if (CheckParents(m_Gens[*i].From(), p_uiTo))
+        if (!visited.insert(node).second)
         {
-            return true;
+            continue;
+        }
+        for (const Gen &gene : genes_)
+        {
+            if (gene.is_enabled() && gene.from() == node)
+            {
+                stack.push_back(gene.to());
+            }
         }
     }
     return false;
 }
 
-void Genome::GetParents(unsigned int p_uiNode, std::vector<unsigned int> *p_Nodes)
+void Genome::mutate(InnovationManager &innovations, const Config &config)
 {
-    for (auto i = m_uiParents[p_uiNode].begin(); i != m_uiParents[p_uiNode].end(); i++)
+    if (Random::chance(config.add_node_rate))
     {
-        p_Nodes->push_back(m_Gens[*i].From());
-        GetParents(m_Gens[*i].From(), p_Nodes);
+        mutate_add_node(innovations);
+    }
+    if (Random::chance(config.add_connection_rate))
+    {
+        mutate_add_connection(innovations, config);
+    }
+    if (Random::chance(config.weight_mutation_rate))
+    {
+        mutate_weights(config);
     }
 }
 
-Genome Genome::Crossover(const Genome &p_Gen1, const Genome &p_Gen2)
+void Genome::mutate_weights(const Config &config)
 {
-    Genome newgenome(p_Gen1.m_uiNumInput, p_Gen1.m_uiNumOutput, p_Gen1.m_pInnovManager);
-    std::set<unsigned int> InnovationIDs;
-    std::set_union(std::begin(p_Gen1.m_vInnovationIDs), std::end(p_Gen1.m_vInnovationIDs),
-                   std::begin(p_Gen2.m_vInnovationIDs), std::end(p_Gen2.m_vInnovationIDs),
-                   std::inserter(InnovationIDs, std::begin(InnovationIDs)));
-    for (auto i = InnovationIDs.begin(); i != InnovationIDs.end(); i++)
+    for (Gen &gene : genes_)
     {
-        if (p_Gen1.m_vInnovGene.count(*i) && p_Gen2.m_vInnovGene.count(*i))
+        if (Random::chance(config.weight_perturb_rate))
         {
-            if (rand() % 2)
-            {
-                unsigned int at = p_Gen1.m_vInnovGene.at(*i);
-                Gen g = p_Gen1.m_Gens.at(at);
-                newgenome.AddGene(g.From(), g.To(), g.GetWeight());
-            }
-            else
-            {
-                unsigned int at = p_Gen2.m_vInnovGene.at(*i);
-                Gen g = p_Gen2.m_Gens.at(at);
-                newgenome.AddGene(g.From(), g.To(), g.GetWeight());
-            }
-        }
-        else if (p_Gen1.m_vInnovGene.count(*i))
-        {
-            if (p_Gen1.m_fFitness > p_Gen2.m_fFitness)
-            {
-                unsigned int at = p_Gen1.m_vInnovGene.at(*i);
-                Gen g = p_Gen1.m_Gens.at(at);
-                newgenome.AddGene(g.From(), g.To(), g.GetWeight());
-            }
+            float weight = gene.weight() + Random::uniform(-config.weight_perturb_strength, config.weight_perturb_strength);
+            gene.set_weight(std::clamp(weight, -config.weight_limit, config.weight_limit));
         }
         else
         {
-            if (p_Gen2.m_fFitness > p_Gen1.m_fFitness)
-            {
-                unsigned int at = p_Gen2.m_vInnovGene.at(*i);
-                Gen g = p_Gen2.m_Gens.at(at);
-                newgenome.AddGene(g.From(), g.To(), g.GetWeight());
-            }
+            gene.set_weight(Random::uniform(-config.weight_range, config.weight_range));
         }
     }
-    return newgenome;
 }
 
-float Genome::Distance(Genome &p_Gen1, Genome &p_Gen2)
+void Genome::mutate_add_connection(InnovationManager &innovations, const Config &config)
 {
-    std::set<unsigned int> InnovationIDs;
-    std::set_union(std::begin(p_Gen1.m_vInnovationIDs), std::end(p_Gen1.m_vInnovationIDs),
-                   std::begin(p_Gen2.m_vInnovationIDs), std::end(p_Gen2.m_vInnovationIDs),
-                   std::inserter(InnovationIDs, std::begin(InnovationIDs)));
+    std::vector<unsigned int> nodes(nodes_.begin(), nodes_.end());
+    for (unsigned int attempt = 0; attempt < config.add_connection_attempts; attempt++)
+    {
+        unsigned int from = nodes[Random::index(nodes.size())];
+        unsigned int to = nodes[Random::index(nodes.size())];
+        if (from == to || is_output(from) || is_input(to) || to == bias_node() || has_connection(from, to) || creates_cycle(from, to))
+        {
+            continue;
+        }
+        insert_gene(Gen(innovations.connection_innovation(from, to), from, to, Random::uniform(-config.weight_range, config.weight_range)));
+        return;
+    }
+}
 
-    unsigned int gen1max = 0;
-    unsigned int gen2max = 0;
-    unsigned int excess = 0;
+void Genome::mutate_add_node(InnovationManager &innovations)
+{
+    std::vector<std::size_t> enabled;
+    for (std::size_t i = 0; i < genes_.size(); i++)
+    {
+        if (genes_[i].is_enabled())
+        {
+            enabled.push_back(i);
+        }
+    }
+    if (enabled.empty())
+    {
+        return;
+    }
+
+    Gen &split = genes_[enabled[Random::index(enabled.size())]];
+    split.set_enabled(false);
+    // Copy: insert_gene below invalidates the reference.
+    const Gen old = split;
+
+    unsigned int node = innovations.split_node(old.innovation());
+    if (nodes_.count(node))
+    {
+        // This genome already split that connection once (it got re-enabled since).
+        node = innovations.new_node();
+    }
+    // The connection into the new node gets weight 1, the one out of it the old weight,
+    // so the network initially behaves almost like before (section 3.1).
+    insert_gene(Gen(innovations.connection_innovation(old.from(), node), old.from(), node, 1.f));
+    insert_gene(Gen(innovations.connection_innovation(node, old.to()), node, old.to(), old.weight()));
+}
+
+Genome Genome::crossover(const Genome &parent1, const Genome &parent2, const Config &config)
+{
+    const bool equal = parent1.fitness_ == parent2.fitness_;
+    const bool first_fitter = parent1.fitness_ > parent2.fitness_;
+    const auto &genes1 = parent1.genes_;
+    const auto &genes2 = parent2.genes_;
+
+    Genome child(parent1.inputs_, parent1.outputs_);
+    auto inherit = [&](Gen gene, bool disabled_in_either_parent) {
+        gene.set_enabled(!(disabled_in_either_parent && Random::chance(config.disable_inherited_rate)));
+        child.insert_gene(gene);
+    };
+
+    std::size_t i = 0;
+    std::size_t j = 0;
+    while (i < genes1.size() || j < genes2.size())
+    {
+        bool has1 = i < genes1.size();
+        bool has2 = j < genes2.size();
+        if (has1 && has2 && genes1[i].innovation() == genes2[j].innovation())
+        {
+            // Matching gene
+            const Gen &chosen = Random::chance(0.5f) ? genes1[i] : genes2[j];
+            inherit(chosen, !genes1[i].is_enabled() || !genes2[j].is_enabled());
+            i++;
+            j++;
+        }
+        else if (has1 && (!has2 || genes1[i].innovation() < genes2[j].innovation()))
+        {
+            // Disjoint or excess gene of parent 1
+            if (first_fitter || (equal && Random::chance(0.5f)))
+            {
+                inherit(genes1[i], !genes1[i].is_enabled());
+            }
+            i++;
+        }
+        else
+        {
+            // Disjoint or excess gene of parent 2
+            if ((!first_fitter && !equal) || (equal && Random::chance(0.5f)))
+            {
+                inherit(genes2[j], !genes2[j].is_enabled());
+            }
+            j++;
+        }
+    }
+    return child;
+}
+
+float Genome::distance(const Genome &genome1, const Genome &genome2, const Config &config)
+{
+    const auto &genes1 = genome1.genes_;
+    const auto &genes2 = genome2.genes_;
+
+    std::size_t i = 0;
+    std::size_t j = 0;
     unsigned int disjoint = 0;
     unsigned int matching = 0;
-    unsigned int maxGenSize = std::max(p_Gen1.m_Gens.size(), p_Gen2.m_Gens.size());
-    float weightdiff = 0.f;
-    for (auto &&i : p_Gen1.m_vInnovationIDs)
+    float weight_difference = 0.f;
+    while (i < genes1.size() && j < genes2.size())
     {
-        if (i > gen1max)
+        if (genes1[i].innovation() == genes2[j].innovation())
         {
-            gen1max = i;
-        }
-    }
-
-    for (auto &&i : p_Gen2.m_vInnovationIDs)
-    {
-        if (i > gen2max)
-        {
-            gen2max = i;
-        }
-    }
-
-    for (auto i = InnovationIDs.begin(); i != InnovationIDs.end(); i++)
-    {
-        if (p_Gen1.m_vInnovGene.count(*i) && p_Gen2.m_vInnovGene.count(*i))
-        {
-            weightdiff += std::abs(p_Gen1.GetGen(*i).GetWeight() - p_Gen2.GetGen(*i).GetWeight());
+            weight_difference += std::abs(genes1[i].weight() - genes2[j].weight());
             matching++;
+            i++;
+            j++;
         }
-        else if (p_Gen1.m_vInnovGene.count(*i) && !p_Gen2.m_vInnovGene.count(*i))
+        else if (genes1[i].innovation() < genes2[j].innovation())
         {
-            if (*i > gen2max)
-            {
-                excess++;
-            }
-            else
-            {
-                disjoint++;
-            }
+            disjoint++;
+            i++;
         }
-        else if (!p_Gen1.m_vInnovGene.count(*i) && p_Gen2.m_vInnovGene.count(*i))
+        else
         {
-            if (*i > gen1max)
-            {
-                excess++;
-            }
-            else
-            {
-                disjoint++;
-            }
+            disjoint++;
+            j++;
         }
     }
-    std::cout << "Excess: " << excess << std::endl;
-    std::cout << "Disjoint: " << disjoint << std::endl;
-    std::cout << "Weight: " << weightdiff / (float)matching << std::endl;
-    if (matching == 0)
+    // Whatever is left lies beyond the other genome's highest innovation number.
+    unsigned int excess = (genes1.size() - i) + (genes2.size() - j);
+
+    float n = std::max(genes1.size(), genes2.size());
+    if (n < config.small_genome_size)
     {
-        matching = 1;
+        n = 1.f;
     }
-    if(maxGenSize == 0)
+    float average_weight_difference = matching > 0 ? weight_difference / matching : 0.f;
+    return config.excess_coefficient * excess / n + config.disjoint_coefficient * disjoint / n +
+           config.weight_coefficient * average_weight_difference;
+}
+
+std::ostream &operator<<(std::ostream &os, const Genome &genome)
+{
+    os << "[ Genes: " << genome.genes_.size() << " Nodes: " << genome.nodes_.size() << " Fitness: " << genome.fitness_ << std::endl;
+    for (const Gen &gene : genome.genes_)
     {
-        maxGenSize = 1;
+        os << "\t" << gene << std::endl;
     }
-    return excess / (float)maxGenSize + disjoint / (float)maxGenSize + weightdiff / (float)matching;
-}
-
-std::vector<unsigned int> Genome::GetDirectParents(unsigned int p_uiID)
-{
-    return m_uiParents[p_uiID];
-}
-
-Gen Genome::GetGen(unsigned int p_uiID)
-{
-    return m_Gens[p_uiID];
-}
-
-unsigned int Genome::GetOutputStart()
-{
-    return m_uiNumInput;
-}
-unsigned int Genome::GetOutputNum()
-{
-    return m_uiNumOutput;
-}
-
-unsigned int Genome::GetNodeSize()
-{
-    return m_uiNodes.size();
-}
-unsigned int Genome::GetGenSize()
-{
-    return m_Gens.size();
-}
-
-std::vector<Gen> Genome::GetGens()
-{
-    return m_Gens;
-}
-
-unsigned int Genome::GetInputNum()
-{
-    return m_uiNumInput;
-}
-
-Genome::Genome()
-{
-
+    os << "]" << std::endl;
+    return os;
 }

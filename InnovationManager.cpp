@@ -1,23 +1,30 @@
 #include "InnovationManager.hpp"
-#include <algorithm>
-InnovationManager::InnovationManager(/* args */) : m_uiCurrentInnovation(0)
+
+InnovationManager::InnovationManager(unsigned int first_hidden_node) : next_node_(first_hidden_node)
 {
 }
 
-InnovationManager::~InnovationManager()
+unsigned int InnovationManager::connection_innovation(unsigned int from, unsigned int to)
 {
+    auto [it, inserted] = connections_.try_emplace({from, to}, next_innovation_);
+    if (inserted)
+    {
+        next_innovation_++;
+    }
+    return it->second;
 }
 
-unsigned int InnovationManager::Register(unsigned int p_uiFrom, unsigned int p_uiTo)
+unsigned int InnovationManager::split_node(unsigned int connection_innovation)
 {
-    auto Found = std::find(m_vRegisteredGenes.begin(), m_vRegisteredGenes.end(), std::tuple<unsigned int, unsigned int>(p_uiFrom, p_uiTo));
-    if (Found != m_vRegisteredGenes.end())
+    auto [it, inserted] = split_nodes_.try_emplace(connection_innovation, next_node_);
+    if (inserted)
     {
-        return std::distance(m_vRegisteredGenes.begin(), Found);
+        next_node_++;
     }
-    else
-    {
-        m_vRegisteredGenes.push_back(std::tuple<unsigned int, unsigned int>(p_uiFrom, p_uiTo));
-        return m_vRegisteredGenes.size() - 1;
-    }
+    return it->second;
+}
+
+unsigned int InnovationManager::new_node()
+{
+    return next_node_++;
 }

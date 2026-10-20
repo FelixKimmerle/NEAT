@@ -1,28 +1,27 @@
 #pragma once
-#include <vector>
 #include <ostream>
+
+// A connection gene: an edge between two nodes, tagged with its historical marking (innovation number).
 class Gen
 {
-  private:
-    unsigned int m_uiInnovationID;
-    unsigned int m_uiFrom;
-    unsigned int m_uiTo;
-    float m_fWeight;
-    bool m_bEnabled;
-
-
   public:
-    Gen(unsigned int p_uiInnovationID, unsigned int p_uiFrom, unsigned int p_uiTo, float p_fWeight, bool p_bEnabled = true);
-    Gen();
-    ~Gen();
-    void Disable();
-    unsigned int From();
-    unsigned int To();
-    bool operator==(const Gen& p_Gen);
-    unsigned int GetInnovationNumber();
-    void SetWeight(float p_fValue);
-    void AdjustWeight(float p_fValue);
-    float GetWeight();
-    bool IsActive();
+    Gen(unsigned int innovation, unsigned int from, unsigned int to, float weight, bool enabled = true);
+
+    unsigned int innovation() const { return innovation_; }
+    unsigned int from() const { return from_; }
+    unsigned int to() const { return to_; }
+    float weight() const { return weight_; }
+    bool is_enabled() const { return enabled_; }
+
+    void set_weight(float weight) { weight_ = weight; }
+    void set_enabled(bool enabled) { enabled_ = enabled; }
+
     friend std::ostream &operator<<(std::ostream &os, const Gen &gen);
+
+  private:
+    unsigned int innovation_;
+    unsigned int from_;
+    unsigned int to_;
+    float weight_;
+    bool enabled_;
 };

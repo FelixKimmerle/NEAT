@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <map>
+#include <string>
 
 class Logger
 {
@@ -12,13 +12,11 @@ class Logger
         Information,
     };
 
-  private:
-    static std::map<unsigned int, std::string> m_Registered;
-    static std::string GetTime(std::string format);
+    static void log(const std::string &message, unsigned int level);
+    // Adds a custom level printed with the given prefix (e.g. a color code).
+    static void register_level(const std::string &format, unsigned int level);
 
-  public:
-    Logger(/* args */);
-    ~Logger();
-    static void Log(const std::string &message, unsigned int level);
-    static void Register(const std::string &format, unsigned int index);
+  private:
+    static std::map<unsigned int, std::string> registered_;
+    static std::string get_time(const std::string &format);
 };
