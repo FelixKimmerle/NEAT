@@ -25,7 +25,7 @@ DecisionPlot::DecisionPlot()
     background_.setOutlineThickness(1.f);
 }
 
-void DecisionPlot::set(const Task &task, const Genome &genome)
+void DecisionPlot::set(const Task& task, const Genome& genome)
 {
     samples_ = task.samples;
     input_min_ = task.input_min;
@@ -46,7 +46,7 @@ void DecisionPlot::set(const Task &task, const Genome &genome)
     texture_.update(image);
 
     outputs_.clear();
-    for (const Sample &sample : samples_)
+    for (const Sample& sample : samples_)
     {
         outputs_.push_back(nn.activate(sample.inputs)[0]);
     }
@@ -59,17 +59,19 @@ void DecisionPlot::set_selected(std::size_t sample)
     rebuild();
 }
 
-void DecisionPlot::set_bounds(const sf::FloatRect &bounds)
+void DecisionPlot::set_bounds(const sf::FloatRect& bounds)
 {
     bounds_ = bounds;
     rebuild();
 }
 
-sf::Vector2f DecisionPlot::to_screen(const std::vector<float> &inputs) const
+sf::Vector2f DecisionPlot::to_screen(const std::vector<float>& inputs) const
 {
     // Samples on the edge of the input range are pulled in a bit so they stay fully visible.
     const float margin = 0.06f;
-    auto normalize = [&](float value) { return margin + (1.f - 2.f * margin) * (value - input_min_) / (input_max_ - input_min_); };
+    auto normalize = [&](float value) {
+        return margin + (1.f - 2.f * margin) * (value - input_min_) / (input_max_ - input_min_);
+    };
     return {bounds_.position.x + bounds_.size.x * normalize(inputs[0]),
             bounds_.position.y + bounds_.size.y * (1.f - normalize(inputs[1]))};
 }
@@ -84,7 +86,7 @@ void DecisionPlot::rebuild()
     const float radius = std::max(3.f, bounds_.size.x / 45.f);
     for (std::size_t i = 0; i < samples_.size() && i < outputs_.size(); i++)
     {
-        sf::CircleShape &point = points_.emplace_back(radius);
+        sf::CircleShape& point = points_.emplace_back(radius);
         point.setOrigin({radius, radius});
         point.setPosition(to_screen(samples_[i].inputs));
         point.setFillColor(samples_[i].expected == 1.f ? sf::Color::White : sf::Color::Black);
@@ -94,7 +96,7 @@ void DecisionPlot::rebuild()
     }
     if (selected_ < points_.size())
     {
-        sf::CircleShape &ring = points_.emplace_back(radius * 2.f);
+        sf::CircleShape& ring = points_.emplace_back(radius * 2.f);
         ring.setOrigin({radius * 2.f, radius * 2.f});
         ring.setPosition(points_[selected_].getPosition());
         ring.setFillColor(sf::Color::Transparent);
@@ -103,10 +105,10 @@ void DecisionPlot::rebuild()
     }
 }
 
-void DecisionPlot::draw(sf::RenderTarget &target, sf::RenderStates states) const
+void DecisionPlot::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
     target.draw(background_, states);
-    for (const auto &point : points_)
+    for (const auto& point : points_)
     {
         target.draw(point, states);
     }

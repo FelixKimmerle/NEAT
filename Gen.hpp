@@ -7,16 +7,37 @@ class Gen
   public:
     Gen(unsigned int innovation, unsigned int from, unsigned int to, float weight, bool enabled = true);
 
-    unsigned int innovation() const { return innovation_; }
-    unsigned int from() const { return from_; }
-    unsigned int to() const { return to_; }
-    float weight() const { return weight_; }
-    bool is_enabled() const { return enabled_; }
+    unsigned int innovation() const
+    {
+        return innovation_;
+    }
+    unsigned int from() const
+    {
+        return from_;
+    }
+    unsigned int to() const
+    {
+        return to_;
+    }
+    float weight() const
+    {
+        return weight_;
+    }
+    bool is_enabled() const
+    {
+        return enabled_;
+    }
 
-    void set_weight(float weight) { weight_ = weight; }
-    void set_enabled(bool enabled) { enabled_ = enabled; }
+    void set_weight(float weight)
+    {
+        weight_ = weight;
+    }
+    void set_enabled(bool enabled)
+    {
+        enabled_ = enabled;
+    }
 
-    friend std::ostream &operator<<(std::ostream &os, const Gen &gen);
+    friend std::ostream& operator<<(std::ostream& os, const Gen& gen);
 
   private:
     unsigned int innovation_;

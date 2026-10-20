@@ -11,18 +11,18 @@ class DecisionPlot : public sf::Drawable
   public:
     DecisionPlot();
     // Holds a texture that the drawn shape points to, so it must not be copied.
-    DecisionPlot(const DecisionPlot &) = delete;
-    DecisionPlot &operator=(const DecisionPlot &) = delete;
+    DecisionPlot(const DecisionPlot&) = delete;
+    DecisionPlot& operator=(const DecisionPlot&) = delete;
 
-    void set(const Task &task, const Genome &genome);
+    void set(const Task& task, const Genome& genome);
     void set_selected(std::size_t sample);
-    void set_bounds(const sf::FloatRect &bounds);
+    void set_bounds(const sf::FloatRect& bounds);
 
   private:
     void rebuild();
     // Position of an input pair inside the plot (y points up).
-    sf::Vector2f to_screen(const std::vector<float> &inputs) const;
-    void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
+    sf::Vector2f to_screen(const std::vector<float>& inputs) const;
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
     static constexpr unsigned int resolution = 96;
 

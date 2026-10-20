@@ -16,11 +16,11 @@
 namespace
 {
 // Repeats an experiment and prints averages. For XOR these compare to section 4.2 of the paper.
-int benchmark(const Task &task, unsigned int runs)
+int benchmark(const Task& task, unsigned int runs)
 {
     const unsigned int max_generations = 1000;
-    const Config &config = task.config;
-    auto fitness = [&](const Genome &genome) { return task.fitness(genome); };
+    const Config& config = task.config;
+    auto fitness = [&](const Genome& genome) { return task.fitness(genome); };
     unsigned int failures = 0;
     double generations = 0, hidden = 0, genes = 0;
     for (unsigned int run = 0; run < runs; run++)
@@ -43,14 +43,16 @@ int benchmark(const Task &task, unsigned int runs)
     }
 
     const bool xor_task = task.name == "XOR";
-    auto paper = [&](const char *value) { return xor_task ? std::string("   (paper: ") + value + ")" : std::string(); };
+    auto paper = [&](const char* value) { return xor_task ? std::string("   (paper: ") + value + ")" : std::string(); };
     unsigned int solved_runs = runs - failures;
-    std::cout << task.name << ": " << runs << " runs, failed: " << failures << " (limit " << max_generations << " generations)\n";
+    std::cout << task.name << ": " << runs << " runs, failed: " << failures << " (limit " << max_generations
+              << " generations)\n";
     if (solved_runs > 0)
     {
-        std::cout << std::fixed << std::setprecision(2)
-                  << "Average generations:      " << generations / solved_runs << paper("32") << "\n"
-                  << "Average evaluations:      " << generations / solved_runs * config.population_size << paper("4755") << "\n"
+        std::cout << std::fixed << std::setprecision(2) << "Average generations:      " << generations / solved_runs
+                  << paper("32") << "\n"
+                  << "Average evaluations:      " << generations / solved_runs * config.population_size << paper("4755")
+                  << "\n"
                   << "Average hidden nodes:     " << hidden / solved_runs << paper("2.35") << "\n"
                   << "Average enabled genes:    " << genes / solved_runs << paper("7.48") << "\n";
     }
@@ -61,17 +63,19 @@ int benchmark(const Task &task, unsigned int runs)
 class Demo
 {
   public:
-    Demo(const sf::Font &font, const Task &task) : view_(font), hud_(font, "", 17), help_(font, "", 15)
+    Demo(const sf::Font& font, const Task& task) : view_(font), hud_(font, "", 17), help_(font, "", 15)
     {
         hud_.setFillColor(sf::Color::White);
         hud_.setPosition({15.f, 10.f});
         help_.setFillColor(sf::Color(170, 170, 170));
-        help_.setString("[Right] 1 generation   [Enter] 10 generations   [A] auto run on/off   [R] new run   [T] next task\n"
-                        "[Up]/[Down] pick sample   [C] cycle samples on/off   [Space] innovation numbers   [Wheel] zoom   [Esc] quit");
+        help_.setString(
+            "[Right] 1 generation   [Enter] 10 generations   [A] auto run on/off   [R] new run   [T] next task\n"
+            "[Up]/[Down] pick sample   [C] cycle samples on/off   [Space] innovation numbers   [Wheel] zoom   [Esc] "
+            "quit");
         set_task(task);
     }
 
-    void set_task(const Task &task)
+    void set_task(const Task& task)
     {
         task_ = task;
         restart();
@@ -91,7 +95,7 @@ class Demo
     {
         for (unsigned int i = 0; i < generations && !solved_; i++)
         {
-            population_->epoch([this](const Genome &genome) { return task_.fitness(genome); });
+            population_->epoch([this](const Genome& genome) { return task_.fitness(genome); });
             solved_ = task_.solved(*population_->best());
         }
         if (solved_)
@@ -106,17 +110,37 @@ class Demo
     void select_sample(int offset)
     {
         const int count = static_cast<int>(task_.samples.size());
-        current_sample_ = static_cast<std::size_t>(((static_cast<int>(current_sample_) + offset) % count + count) % count);
+        current_sample_ =
+            static_cast<std::size_t>(((static_cast<int>(current_sample_) + offset) % count + count) % count);
         refresh();
     }
 
-    void toggle_auto_run() { auto_run_ = !auto_run_ && !solved_; refresh(); }
-    void toggle_cycling() { cycle_samples_ = !cycle_samples_; }
+    void toggle_auto_run()
+    {
+        auto_run_ = !auto_run_ && !solved_;
+        refresh();
+    }
+    void toggle_cycling()
+    {
+        cycle_samples_ = !cycle_samples_;
+    }
 
-    bool auto_run() const { return auto_run_; }
-    bool cycle_samples() const { return cycle_samples_; }
-    const Task &task() const { return task_; }
-    NetworkView &view() { return view_; }
+    bool auto_run() const
+    {
+        return auto_run_;
+    }
+    bool cycle_samples() const
+    {
+        return cycle_samples_;
+    }
+    const Task& task() const
+    {
+        return task_;
+    }
+    NetworkView& view()
+    {
+        return view_;
+    }
 
     void set_window_size(sf::Vector2u size)
     {
@@ -126,7 +150,7 @@ class Demo
         help_.setPosition({15.f, size.y - 50.f});
     }
 
-    void draw(sf::RenderTarget &target) const
+    void draw(sf::RenderTarget& target) const
     {
         target.draw(view_);
         target.draw(plot_);
@@ -138,7 +162,7 @@ class Demo
     // Updates the text, the plot and the node colors for the current generation and sample.
     void refresh()
     {
-        const Genome &best = *population_->best();
+        const Genome& best = *population_->best();
         NN nn(best);
 
         std::ostringstream hud;
@@ -151,23 +175,24 @@ class Demo
         {
             hud << (auto_run_ ? "running" : "paused");
         }
-        hud << std::fixed << std::setprecision(3) << "\nBest network: fitness " << best.fitness() << " / " << std::setprecision(0)
-            << task_.max_fitness() << ", " << best.hidden_count() << " hidden nodes, " << best.enabled_gene_count()
-            << " enabled connections\n";
+        hud << std::fixed << std::setprecision(3) << "\nBest network: fitness " << best.fitness() << " / "
+            << std::setprecision(0) << task_.max_fitness() << ", " << best.hidden_count() << " hidden nodes, "
+            << best.enabled_gene_count() << " enabled connections\n";
 
         hud << "Species (" << population_->species().size() << "): ";
-        for (const Species &species : population_->species())
+        for (const Species& species : population_->species())
         {
             hud << species.members.size() << " ";
         }
         hud << "\n\n" << task_.legend << "\n";
 
         hud << "Correctly classified: " << task_.correct_count(best) << " / " << task_.samples.size() << "\n";
-        const Sample &sample = task_.samples[current_sample_];
+        const Sample& sample = task_.samples[current_sample_];
         float output = nn.activate(sample.inputs)[0];
-        hud << std::defaultfloat << "Sample " << current_sample_ + 1 << ": (" << sample.inputs[0] << ", " << sample.inputs[1]
-            << ")  ->  " << std::fixed << std::setprecision(3) << output << "   expected " << std::setprecision(0)
-            << sample.expected << (is_correct(output, sample) ? "   right" : "   WRONG") << "\n";
+        hud << std::defaultfloat << "Sample " << current_sample_ + 1 << ": (" << sample.inputs[0] << ", "
+            << sample.inputs[1] << ")  ->  " << std::fixed << std::setprecision(3) << output << "   expected "
+            << std::setprecision(0) << sample.expected << (is_correct(output, sample) ? "   right" : "   WRONG")
+            << "\n";
         hud_.setString(hud.str());
 
         view_.set_values(nn.values());
@@ -186,7 +211,7 @@ class Demo
     std::size_t current_sample_ = 0;
 };
 
-int run_gui(const std::vector<Task> &tasks, std::size_t task)
+int run_gui(const std::vector<Task>& tasks, std::size_t task)
 {
     sf::Font font;
     if (!font.openFromFile(NEAT_FONT_PATH))
@@ -219,7 +244,7 @@ int run_gui(const std::vector<Task> &tasks, std::size_t task)
             {
                 window.close();
             }
-            else if (const auto *key = event->getIf<sf::Event::KeyPressed>())
+            else if (const auto* key = event->getIf<sf::Event::KeyPressed>())
             {
                 switch (key->code)
                 {
@@ -261,12 +286,12 @@ int run_gui(const std::vector<Task> &tasks, std::size_t task)
                     break;
                 }
             }
-            else if (const auto *resized = event->getIf<sf::Event::Resized>())
+            else if (const auto* resized = event->getIf<sf::Event::Resized>())
             {
                 window.setView(sf::View(sf::FloatRect({0.f, 0.f}, sf::Vector2f(resized->size))));
                 demo.set_window_size(resized->size);
             }
-            else if (const auto *wheel = event->getIf<sf::Event::MouseWheelScrolled>())
+            else if (const auto* wheel = event->getIf<sf::Event::MouseWheelScrolled>())
             {
                 node_size = std::clamp(node_size + wheel->delta * 2.f, 10.f, 80.f);
                 demo.view().set_node_size(node_size);
@@ -291,14 +316,14 @@ int run_gui(const std::vector<Task> &tasks, std::size_t task)
     return 0;
 }
 
-int usage(const char *program)
+int usage(const char* program)
 {
     std::cerr << "Usage: " << program << " [--task xor|circle] [--seed N] [--bench RUNS]" << std::endl;
     return 1;
 }
 } // namespace
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     const std::vector<Task> tasks{make_xor_task(), make_circle_task()};
     std::size_t task = 0;
@@ -317,9 +342,10 @@ int main(int argc, char **argv)
         else if (std::strcmp(argv[i], "--task") == 0 && i + 1 < argc)
         {
             std::string name = argv[++i];
-            auto found = std::find_if(tasks.begin(), tasks.end(), [&](const Task &t) {
+            auto found = std::find_if(tasks.begin(), tasks.end(), [&](const Task& t) {
                 std::string lower = t.name;
-                std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
+                std::transform(lower.begin(), lower.end(), lower.begin(),
+                               [](unsigned char c) { return std::tolower(c); });
                 return lower == name;
             });
             if (found == tasks.end())

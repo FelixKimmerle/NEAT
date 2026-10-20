@@ -24,14 +24,20 @@ struct Task
 
     // The XOR fitness of section 4.2, generalized: (samples - summed error)^2.
     // Every sample's error is weighted so both classes count the same.
-    float fitness(const Genome &genome) const;
-    float max_fitness() const { return static_cast<float>(samples.size() * samples.size()); }
-    unsigned int correct_count(const Genome &genome) const;
-    bool solved(const Genome &genome) const { return correct_count(genome) == samples.size(); }
+    float fitness(const Genome& genome) const;
+    float max_fitness() const
+    {
+        return static_cast<float>(samples.size() * samples.size());
+    }
+    unsigned int correct_count(const Genome& genome) const;
+    bool solved(const Genome& genome) const
+    {
+        return correct_count(genome) == samples.size();
+    }
 };
 
 // An output counts as 1 from 0.5 on.
-bool is_correct(float output, const Sample &sample);
+bool is_correct(float output, const Sample& sample);
 
 // The four XOR cases, the experiment of section 4.2 of the paper.
 Task make_xor_task();

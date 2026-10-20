@@ -21,7 +21,7 @@ ThickLine::ThickLine(sf::Vector2f from, sf::Vector2f to, float thickness, sf::Co
               sf::Vertex{arrow_base - arrow_half_width, color}};
 }
 
-void ThickLine::draw(sf::RenderTarget &target, sf::RenderStates states) const
+void ThickLine::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
     target.draw(body_.data(), body_.size(), sf::PrimitiveType::TriangleFan, states);
     target.draw(arrow_.data(), arrow_.size(), sf::PrimitiveType::Triangles, states);

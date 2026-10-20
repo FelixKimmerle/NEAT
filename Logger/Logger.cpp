@@ -1,14 +1,14 @@
 #include "Logger.hpp"
 #include "ConsoleColor.hpp"
-#include <iostream>
-#include <iomanip>
-#include <ctime>
-#include <sstream>
 #include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
 std::map<unsigned int, std::string> Logger::registered_;
 
-std::string Logger::get_time(const std::string &format)
+std::string Logger::get_time(const std::string& format)
 {
     using namespace std::chrono;
 
@@ -33,20 +33,26 @@ std::string Logger::get_time(const std::string &format)
     return oss.str();
 }
 
-
-void Logger::log(const std::string &message, unsigned int level)
+void Logger::log(const std::string& message, unsigned int level)
 {
-    std::cerr << Color::Compatibility::Text::LightGray << "[" << Color::Text::Aqua << Color::Formatting::Bold << get_time("%d-%m-%Y %H:%M:%S") << Color::Reset << Color::Compatibility::Text::LightGray << "] ";
+    std::cerr << Color::Compatibility::Text::LightGray << "[" << Color::Text::Aqua << Color::Formatting::Bold
+              << get_time("%d-%m-%Y %H:%M:%S") << Color::Reset << Color::Compatibility::Text::LightGray << "] ";
     switch (level)
     {
     case Error:
-        std::cerr << Color::Compatibility::Text::LightGray << "[ " << Color::Compatibility::Text::Red << Color::Formatting::Bold << "Error" << Color::Reset << Color::Compatibility::Text::LightGray << "   ] " << Color::Compatibility::Text::Red << message << Color::Reset << std::endl;
+        std::cerr << Color::Compatibility::Text::LightGray << "[ " << Color::Compatibility::Text::Red
+                  << Color::Formatting::Bold << "Error" << Color::Reset << Color::Compatibility::Text::LightGray
+                  << "   ] " << Color::Compatibility::Text::Red << message << Color::Reset << std::endl;
         break;
     case Warning:
-        std::cerr << Color::Compatibility::Text::LightGray << "[ " << Color::Compatibility::Text::Yellow << Color::Formatting::Bold << "Warning" << Color::Reset << Color::Compatibility::Text::LightGray << " ] " << Color::Compatibility::Text::Yellow << message << Color::Reset << std::endl;
+        std::cerr << Color::Compatibility::Text::LightGray << "[ " << Color::Compatibility::Text::Yellow
+                  << Color::Formatting::Bold << "Warning" << Color::Reset << Color::Compatibility::Text::LightGray
+                  << " ] " << Color::Compatibility::Text::Yellow << message << Color::Reset << std::endl;
         break;
     case Information:
-        std::cerr << Color::Compatibility::Text::LightGray << "[ " << Color::Compatibility::Text::Green << Color::Formatting::Bold << "Info" << Color::Reset << Color::Compatibility::Text::LightGray << "    ] " << Color::Compatibility::Text::Green << message << Color::Reset << std::endl;
+        std::cerr << Color::Compatibility::Text::LightGray << "[ " << Color::Compatibility::Text::Green
+                  << Color::Formatting::Bold << "Info" << Color::Reset << Color::Compatibility::Text::LightGray
+                  << "    ] " << Color::Compatibility::Text::Green << message << Color::Reset << std::endl;
         break;
 
     default:
@@ -57,7 +63,7 @@ void Logger::log(const std::string &message, unsigned int level)
         break;
     }
 }
-void Logger::register_level(const std::string &format, unsigned int level)
+void Logger::register_level(const std::string& format, unsigned int level)
 {
     registered_.insert(std::make_pair(level, format));
 }

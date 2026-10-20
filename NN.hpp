@@ -7,12 +7,15 @@
 class NN
 {
   public:
-    explicit NN(const Genome &genome);
+    explicit NN(const Genome& genome);
 
     // Takes one value per input node, returns one value per output node.
-    std::vector<float> activate(const std::vector<float> &inputs);
+    std::vector<float> activate(const std::vector<float>& inputs);
     // Value of every node after the last activate call.
-    const std::map<unsigned int, float> &values() const { return values_; }
+    const std::map<unsigned int, float>& values() const
+    {
+        return values_;
+    }
 
   private:
     struct Connection

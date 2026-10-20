@@ -14,24 +14,24 @@ sf::Color signed_color(float value)
 }
 } // namespace
 
-NetworkView::NetworkView(const sf::Font &font) : font_(font)
+NetworkView::NetworkView(const sf::Font& font) : font_(font)
 {
 }
 
-void NetworkView::set_genome(const Genome &genome)
+void NetworkView::set_genome(const Genome& genome)
 {
     genome_ = genome;
     values_.clear();
     rebuild();
 }
 
-void NetworkView::set_values(const std::map<unsigned int, float> &values)
+void NetworkView::set_values(const std::map<unsigned int, float>& values)
 {
     values_ = values;
     rebuild();
 }
 
-void NetworkView::set_bounds(const sf::FloatRect &bounds)
+void NetworkView::set_bounds(const sf::FloatRect& bounds)
 {
     bounds_ = bounds;
     rebuild();
@@ -60,7 +60,7 @@ void NetworkView::rebuild()
     {
         return;
     }
-    const Genome &genome = *genome_;
+    const Genome& genome = *genome_;
 
     // Layer = longest path from a node without incoming connections. Outputs always go last.
     std::map<unsigned int, unsigned int> layer;
@@ -68,7 +68,7 @@ void NetworkView::rebuild()
     for (unsigned int node : genome.topological_order())
     {
         unsigned int l = genome.is_hidden(node) ? 1 : 0;
-        for (const Gen &gene : genome.genes())
+        for (const Gen& gene : genome.genes())
         {
             if (gene.is_enabled() && gene.to() == node)
             {
@@ -89,7 +89,7 @@ void NetworkView::rebuild()
 
     const float radius = node_size_ / 1.75f;
     std::map<unsigned int, sf::Vector2f> positions;
-    for (const auto &[column, nodes] : columns)
+    for (const auto& [column, nodes] : columns)
     {
         float x = bounds_.position.x + radius + (bounds_.size.x - 2.f * radius) * column / last_layer;
         for (std::size_t i = 0; i < nodes.size(); i++)
@@ -99,7 +99,7 @@ void NetworkView::rebuild()
         }
     }
 
-    for (const Gen &gene : genome.genes())
+    for (const Gen& gene : genome.genes())
     {
         if (!gene.is_enabled() && !show_innovations_)
         {
@@ -109,7 +109,8 @@ void NetworkView::rebuild()
         sf::Vector2f to = positions[gene.to()];
         if (gene.is_enabled())
         {
-            lines_.emplace_back(from, to, 1.f + std::min(std::abs(gene.weight()), 3.f), signed_color(gene.weight()), radius);
+            lines_.emplace_back(from, to, 1.f + std::min(std::abs(gene.weight()), 3.f), signed_color(gene.weight()),
+                                radius);
         }
         else
         {
@@ -118,14 +119,15 @@ void NetworkView::rebuild()
 
         if (show_innovations_)
         {
-            sf::Text &label = labels_.emplace_back(font_, std::to_string(gene.innovation()), static_cast<unsigned int>(node_size_ * 0.6f));
+            sf::Text& label = labels_.emplace_back(font_, std::to_string(gene.innovation()),
+                                                   static_cast<unsigned int>(node_size_ * 0.6f));
             label.setFillColor(sf::Color::Black);
             sf::FloatRect bounds = label.getLocalBounds();
             label.setOrigin(bounds.position + bounds.size / 2.f);
             label.setPosition((from + to) / 2.f);
 
             bounds = label.getGlobalBounds();
-            sf::RectangleShape &box = label_boxes_.emplace_back(bounds.size + sf::Vector2f(4.f, 4.f));
+            sf::RectangleShape& box = label_boxes_.emplace_back(bounds.size + sf::Vector2f(4.f, 4.f));
             box.setPosition(bounds.position - sf::Vector2f(2.f, 2.f));
             box.setFillColor(sf::Color::White);
             box.setOutlineColor(outline_color);
@@ -133,9 +135,9 @@ void NetworkView::rebuild()
         }
     }
 
-    for (const auto &[node, position] : positions)
+    for (const auto& [node, position] : positions)
     {
-        sf::CircleShape &circle = nodes_.emplace_back(radius);
+        sf::CircleShape& circle = nodes_.emplace_back(radius);
         circle.setOrigin({radius, radius});
         circle.setPosition(position);
         circle.setOutlineColor(node == genome.bias_node() ? sf::Color(80, 120, 255) : outline_color);
@@ -146,7 +148,7 @@ void NetworkView::rebuild()
         // Longer ids get a smaller font so they still fit into the circle.
         const std::string id = std::to_string(node);
         const float text_scale = id.size() <= 2 ? 0.7f : 1.4f / id.size();
-        sf::Text &text = node_texts_.emplace_back(font_, id, static_cast<unsigned int>(node_size_ * text_scale));
+        sf::Text& text = node_texts_.emplace_back(font_, id, static_cast<unsigned int>(node_size_ * text_scale));
         text.setFillColor(sf::Color::Black);
         sf::FloatRect bounds = text.getLocalBounds();
         text.setOrigin(bounds.position + bounds.size / 2.f);
@@ -154,25 +156,25 @@ void NetworkView::rebuild()
     }
 }
 
-void NetworkView::draw(sf::RenderTarget &target, sf::RenderStates states) const
+void NetworkView::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
-    for (const auto &line : lines_)
+    for (const auto& line : lines_)
     {
         target.draw(line, states);
     }
-    for (const auto &box : label_boxes_)
+    for (const auto& box : label_boxes_)
     {
         target.draw(box, states);
     }
-    for (const auto &label : labels_)
+    for (const auto& label : labels_)
     {
         target.draw(label, states);
     }
-    for (const auto &node : nodes_)
+    for (const auto& node : nodes_)
     {
         target.draw(node, states);
     }
-    for (const auto &text : node_texts_)
+    for (const auto& text : node_texts_)
     {
         target.draw(text, states);
     }

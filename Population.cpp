@@ -4,7 +4,7 @@
 #include <cmath>
 #include <numeric>
 
-Population::Population(unsigned int inputs, unsigned int outputs, const Config &config)
+Population::Population(unsigned int inputs, unsigned int outputs, const Config& config)
     : config_(config), innovations_(inputs + outputs + 1)
 {
     // Uniform minimal population (section 3.4): same topology, different random weights.
@@ -14,15 +14,15 @@ Population::Population(unsigned int inputs, unsigned int outputs, const Config &
     }
 }
 
-void Population::epoch(const std::function<float(const Genome &)> &fitness)
+void Population::epoch(const std::function<float(const Genome&)>& fitness)
 {
-    for (Genome &genome : genomes_)
+    for (Genome& genome : genomes_)
     {
         genome.set_fitness(fitness(genome));
     }
 
-    const Genome &best = *std::max_element(genomes_.begin(), genomes_.end(),
-                                           [](const Genome &a, const Genome &b) { return a.fitness() < b.fitness(); });
+    const Genome& best = *std::max_element(genomes_.begin(), genomes_.end(),
+                                           [](const Genome& a, const Genome& b) { return a.fitness() < b.fitness(); });
     best_ = best;
     if (best.fitness() > best_fitness_ever_)
     {
@@ -51,7 +51,7 @@ void Population::epoch(const std::function<float(const Genome &)> &fitness)
     {
         if (offspring[s] > 0)
         {
-            Species &species = species_[s];
+            Species& species = species_[s];
             species.representative = genomes_[species.members[Random::index(species.members.size())]];
             surviving.push_back(std::move(species));
         }
@@ -63,14 +63,14 @@ void Population::epoch(const std::function<float(const Genome &)> &fitness)
 
 void Population::speciate()
 {
-    for (Species &species : species_)
+    for (Species& species : species_)
     {
         species.members.clear();
     }
     for (std::size_t i = 0; i < genomes_.size(); i++)
     {
         // Placed into the first compatible species, so species never overlap.
-        auto compatible = std::find_if(species_.begin(), species_.end(), [&](const Species &species) {
+        auto compatible = std::find_if(species_.begin(), species_.end(), [&](const Species& species) {
             return Genome::distance(genomes_[i], species.representative, config_) < config_.compatibility_threshold;
         });
         if (compatible != species_.end())
@@ -82,10 +82,11 @@ void Population::speciate()
             species_.push_back(Species{next_species_id_++, genomes_[i], {i}});
         }
     }
-    species_.erase(std::remove_if(species_.begin(), species_.end(), [](const Species &species) { return species.members.empty(); }),
+    species_.erase(std::remove_if(species_.begin(), species_.end(),
+                                  [](const Species& species) { return species.members.empty(); }),
                    species_.end());
 
-    for (Species &species : species_)
+    for (Species& species : species_)
     {
         float best = 0.f;
         for (std::size_t member : species.members)
@@ -110,7 +111,9 @@ std::vector<bool> Population::select_reproducing_species()
     auto allow_top_two = [&]() {
         std::vector<std::size_t> order(species_.size());
         std::iota(order.begin(), order.end(), 0);
-        std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) { return species_[a].best_fitness > species_[b].best_fitness; });
+        std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {
+            return species_[a].best_fitness > species_[b].best_fitness;
+        });
         for (std::size_t i = 0; i < std::min<std::size_t>(2, order.size()); i++)
         {
             allowed[order[i]] = true;
@@ -138,7 +141,7 @@ std::vector<bool> Population::select_reproducing_species()
     return allowed;
 }
 
-std::vector<unsigned int> Population::allocate_offspring(const std::vector<bool> &allowed) const
+std::vector<unsigned int> Population::allocate_offspring(const std::vector<bool>& allowed) const
 {
     // Explicit fitness sharing (equation 2): the adjusted fitness of a member is its fitness divided
     // by the species size, so a species' share is proportional to its average fitness.
@@ -186,18 +189,19 @@ std::vector<unsigned int> Population::allocate_offspring(const std::vector<bool>
     return offspring;
 }
 
-void Population::reproduce(const Species &species, unsigned int offspring, std::vector<Genome> &next)
+void Population::reproduce(const Species& species, unsigned int offspring, std::vector<Genome>& next)
 {
     if (offspring == 0)
     {
         return;
     }
-    std::vector<const Genome *> members;
+    std::vector<const Genome*> members;
     for (std::size_t member : species.members)
     {
         members.push_back(&genomes_[member]);
     }
-    std::sort(members.begin(), members.end(), [](const Genome *a, const Genome *b) { return a->fitness() > b->fitness(); });
+    std::sort(members.begin(), members.end(),
+              [](const Genome* a, const Genome* b) { return a->fitness() > b->fitness(); });
 
     if (members.size() > config_.champion_copy_min_species_size)
     {
@@ -211,14 +215,14 @@ void Population::reproduce(const Species &species, unsigned int offspring, std::
 
     for (unsigned int i = 0; i < offspring; i++)
     {
-        const Genome &mother = *members[Random::index(members.size())];
+        const Genome& mother = *members[Random::index(members.size())];
         if (members.size() == 1 || Random::chance(config_.mutation_only_rate))
         {
             next.push_back(mother);
         }
         else
         {
-            const Genome *father = members[Random::index(members.size())];
+            const Genome* father = members[Random::index(members.size())];
             if (Random::chance(config_.interspecies_mating_rate))
             {
                 father = &genomes_[Random::index(genomes_.size())];

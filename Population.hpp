@@ -20,26 +20,38 @@ struct Species
 class Population
 {
   public:
-    Population(unsigned int inputs, unsigned int outputs, const Config &config = {});
+    Population(unsigned int inputs, unsigned int outputs, const Config& config = {});
 
     // Evaluates every genome (fitness has to be >= 0), speciates the population and
     // replaces it with the next generation.
-    void epoch(const std::function<float(const Genome &)> &fitness);
+    void epoch(const std::function<float(const Genome&)>& fitness);
 
-    unsigned int generation() const { return generation_; }
-    const std::vector<Genome> &genomes() const { return genomes_; }
+    unsigned int generation() const
+    {
+        return generation_;
+    }
+    const std::vector<Genome>& genomes() const
+    {
+        return genomes_;
+    }
     // Species of the last evaluated generation.
-    const std::vector<Species> &species() const { return species_; }
+    const std::vector<Species>& species() const
+    {
+        return species_;
+    }
     // Best genome of the last evaluated generation. Empty before the first epoch.
-    const std::optional<Genome> &best() const { return best_; }
+    const std::optional<Genome>& best() const
+    {
+        return best_;
+    }
 
   private:
     void speciate();
     // Which species may reproduce this generation.
     std::vector<bool> select_reproducing_species();
     // Number of offspring per species, summing up to the population size.
-    std::vector<unsigned int> allocate_offspring(const std::vector<bool> &allowed) const;
-    void reproduce(const Species &species, unsigned int offspring, std::vector<Genome> &next);
+    std::vector<unsigned int> allocate_offspring(const std::vector<bool>& allowed) const;
+    void reproduce(const Species& species, unsigned int offspring, std::vector<Genome>& next);
 
     Config config_;
     InnovationManager innovations_;

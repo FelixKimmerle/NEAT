@@ -5,7 +5,7 @@
 // One shared engine instead of rand(), so a whole run is reproducible from a single seed.
 namespace Random
 {
-inline std::mt19937 &engine()
+inline std::mt19937& engine()
 {
     static std::mt19937 engine{std::random_device{}()};
     return engine;

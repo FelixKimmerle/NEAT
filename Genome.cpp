@@ -12,11 +12,12 @@ Genome::Genome(unsigned int inputs, unsigned int outputs) : inputs_(inputs), out
     }
 }
 
-Genome::Genome(unsigned int inputs, unsigned int outputs, InnovationManager &innovations, const Config &config)
+Genome::Genome(unsigned int inputs, unsigned int outputs, InnovationManager& innovations, const Config& config)
     : Genome(inputs, outputs)
 {
     auto connect = [&](unsigned int from, unsigned int to) {
-        insert_gene(Gen(innovations.connection_innovation(from, to), from, to, Random::uniform(-config.weight_range, config.weight_range)));
+        insert_gene(Gen(innovations.connection_innovation(from, to), from, to,
+                        Random::uniform(-config.weight_range, config.weight_range)));
     };
     for (unsigned int to = inputs_; to < inputs_ + outputs_; to++)
     {
@@ -30,7 +31,7 @@ Genome::Genome(unsigned int inputs, unsigned int outputs, InnovationManager &inn
 
 unsigned int Genome::enabled_gene_count() const
 {
-    return std::count_if(genes_.begin(), genes_.end(), [](const Gen &gene) { return gene.is_enabled(); });
+    return std::count_if(genes_.begin(), genes_.end(), [](const Gen& gene) { return gene.is_enabled(); });
 }
 
 std::vector<unsigned int> Genome::topological_order() const
@@ -41,7 +42,7 @@ std::vector<unsigned int> Genome::topological_order() const
     {
         incoming[node] = 0;
     }
-    for (const Gen &gene : genes_)
+    for (const Gen& gene : genes_)
     {
         if (gene.is_enabled())
         {
@@ -50,7 +51,7 @@ std::vector<unsigned int> Genome::topological_order() const
     }
 
     std::vector<unsigned int> order;
-    for (const auto &[node, count] : incoming)
+    for (const auto& [node, count] : incoming)
     {
         if (count == 0)
         {
@@ -59,7 +60,7 @@ std::vector<unsigned int> Genome::topological_order() const
     }
     for (std::size_t i = 0; i < order.size(); i++)
     {
-        for (const Gen &gene : genes_)
+        for (const Gen& gene : genes_)
         {
             if (gene.is_enabled() && gene.from() == order[i] && --incoming[gene.to()] == 0)
             {
@@ -73,7 +74,7 @@ std::vector<unsigned int> Genome::topological_order() const
 void Genome::insert_gene(Gen gene)
 {
     auto position = std::lower_bound(genes_.begin(), genes_.end(), gene.innovation(),
-                                     [](const Gen &g, unsigned int innovation) { return g.innovation() < innovation; });
+                                     [](const Gen& g, unsigned int innovation) { return g.innovation() < innovation; });
     if (position != genes_.end() && position->innovation() == gene.innovation())
     {
         return;
@@ -90,7 +91,7 @@ void Genome::insert_gene(Gen gene)
 bool Genome::has_connection(unsigned int from, unsigned int to) const
 {
     return std::any_of(genes_.begin(), genes_.end(),
-                       [&](const Gen &gene) { return gene.from() == from && gene.to() == to; });
+                       [&](const Gen& gene) { return gene.from() == from && gene.to() == to; });
 }
 
 bool Genome::creates_cycle(unsigned int from, unsigned int to) const
@@ -110,7 +111,7 @@ bool Genome::creates_cycle(unsigned int from, unsigned int to) const
         {
             continue;
         }
-        for (const Gen &gene : genes_)
+        for (const Gen& gene : genes_)
         {
             if (gene.is_enabled() && gene.from() == node)
             {
@@ -121,7 +122,7 @@ bool Genome::creates_cycle(unsigned int from, unsigned int to) const
     return false;
 }
 
-void Genome::mutate(InnovationManager &innovations, const Config &config)
+void Genome::mutate(InnovationManager& innovations, const Config& config)
 {
     if (Random::chance(config.add_node_rate))
     {
@@ -137,13 +138,14 @@ void Genome::mutate(InnovationManager &innovations, const Config &config)
     }
 }
 
-void Genome::mutate_weights(const Config &config)
+void Genome::mutate_weights(const Config& config)
 {
-    for (Gen &gene : genes_)
+    for (Gen& gene : genes_)
     {
         if (Random::chance(config.weight_perturb_rate))
         {
-            float weight = gene.weight() + Random::uniform(-config.weight_perturb_strength, config.weight_perturb_strength);
+            float weight =
+                gene.weight() + Random::uniform(-config.weight_perturb_strength, config.weight_perturb_strength);
             gene.set_weight(std::clamp(weight, -config.weight_limit, config.weight_limit));
         }
         else
@@ -153,23 +155,25 @@ void Genome::mutate_weights(const Config &config)
     }
 }
 
-void Genome::mutate_add_connection(InnovationManager &innovations, const Config &config)
+void Genome::mutate_add_connection(InnovationManager& innovations, const Config& config)
 {
     std::vector<unsigned int> nodes(nodes_.begin(), nodes_.end());
     for (unsigned int attempt = 0; attempt < config.add_connection_attempts; attempt++)
     {
         unsigned int from = nodes[Random::index(nodes.size())];
         unsigned int to = nodes[Random::index(nodes.size())];
-        if (from == to || is_output(from) || is_input(to) || to == bias_node() || has_connection(from, to) || creates_cycle(from, to))
+        if (from == to || is_output(from) || is_input(to) || to == bias_node() || has_connection(from, to) ||
+            creates_cycle(from, to))
         {
             continue;
         }
-        insert_gene(Gen(innovations.connection_innovation(from, to), from, to, Random::uniform(-config.weight_range, config.weight_range)));
+        insert_gene(Gen(innovations.connection_innovation(from, to), from, to,
+                        Random::uniform(-config.weight_range, config.weight_range)));
         return;
     }
 }
 
-void Genome::mutate_add_node(InnovationManager &innovations)
+void Genome::mutate_add_node(InnovationManager& innovations)
 {
     std::vector<std::size_t> enabled;
     for (std::size_t i = 0; i < genes_.size(); i++)
@@ -184,7 +188,7 @@ void Genome::mutate_add_node(InnovationManager &innovations)
         return;
     }
 
-    Gen &split = genes_[enabled[Random::index(enabled.size())]];
+    Gen& split = genes_[enabled[Random::index(enabled.size())]];
     split.set_enabled(false);
     // Copy: insert_gene below invalidates the reference.
     const Gen old = split;
@@ -201,12 +205,12 @@ void Genome::mutate_add_node(InnovationManager &innovations)
     insert_gene(Gen(innovations.connection_innovation(node, old.to()), node, old.to(), old.weight()));
 }
 
-Genome Genome::crossover(const Genome &parent1, const Genome &parent2, const Config &config)
+Genome Genome::crossover(const Genome& parent1, const Genome& parent2, const Config& config)
 {
     const bool equal = parent1.fitness_ == parent2.fitness_;
     const bool first_fitter = parent1.fitness_ > parent2.fitness_;
-    const auto &genes1 = parent1.genes_;
-    const auto &genes2 = parent2.genes_;
+    const auto& genes1 = parent1.genes_;
+    const auto& genes2 = parent2.genes_;
 
     Genome child(parent1.inputs_, parent1.outputs_);
     auto inherit = [&](Gen gene, bool disabled_in_either_parent) {
@@ -223,7 +227,7 @@ Genome Genome::crossover(const Genome &parent1, const Genome &parent2, const Con
         if (has1 && has2 && genes1[i].innovation() == genes2[j].innovation())
         {
             // Matching gene
-            const Gen &chosen = Random::chance(0.5f) ? genes1[i] : genes2[j];
+            const Gen& chosen = Random::chance(0.5f) ? genes1[i] : genes2[j];
             inherit(chosen, !genes1[i].is_enabled() || !genes2[j].is_enabled());
             i++;
             j++;
@@ -250,10 +254,10 @@ Genome Genome::crossover(const Genome &parent1, const Genome &parent2, const Con
     return child;
 }
 
-float Genome::distance(const Genome &genome1, const Genome &genome2, const Config &config)
+float Genome::distance(const Genome& genome1, const Genome& genome2, const Config& config)
 {
-    const auto &genes1 = genome1.genes_;
-    const auto &genes2 = genome2.genes_;
+    const auto& genes1 = genome1.genes_;
+    const auto& genes2 = genome2.genes_;
 
     std::size_t i = 0;
     std::size_t j = 0;
@@ -293,10 +297,11 @@ float Genome::distance(const Genome &genome1, const Genome &genome2, const Confi
            config.weight_coefficient * average_weight_difference;
 }
 
-std::ostream &operator<<(std::ostream &os, const Genome &genome)
+std::ostream& operator<<(std::ostream& os, const Genome& genome)
 {
-    os << "[ Genes: " << genome.genes_.size() << " Nodes: " << genome.nodes_.size() << " Fitness: " << genome.fitness_ << std::endl;
-    for (const Gen &gene : genome.genes_)
+    os << "[ Genes: " << genome.genes_.size() << " Nodes: " << genome.nodes_.size() << " Fitness: " << genome.fitness_
+       << std::endl;
+    for (const Gen& gene : genome.genes_)
     {
         os << "\t" << gene << std::endl;
     }

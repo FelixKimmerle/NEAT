@@ -11,21 +11,21 @@
 class NetworkView : public sf::Drawable
 {
   public:
-    explicit NetworkView(const sf::Font &font);
+    explicit NetworkView(const sf::Font& font);
 
-    void set_genome(const Genome &genome);
+    void set_genome(const Genome& genome);
     // Node values as returned by NN::values().
-    void set_values(const std::map<unsigned int, float> &values);
-    void set_bounds(const sf::FloatRect &bounds);
+    void set_values(const std::map<unsigned int, float>& values);
+    void set_bounds(const sf::FloatRect& bounds);
     void set_node_size(float size);
     // Also show disabled connections and label every connection with its innovation number.
     void show_innovations(bool show);
 
   private:
     void rebuild();
-    void draw(sf::RenderTarget &target, sf::RenderStates states) const override;
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
-    const sf::Font &font_;
+    const sf::Font& font_;
     std::optional<Genome> genome_;
     std::map<unsigned int, float> values_;
     sf::FloatRect bounds_;

@@ -5,7 +5,7 @@ Gen::Gen(unsigned int innovation, unsigned int from, unsigned int to, float weig
 {
 }
 
-std::ostream &operator<<(std::ostream &os, const Gen &gen)
+std::ostream& operator<<(std::ostream& os, const Gen& gen)
 {
     os << "(Innov: " << gen.innovation_ << " " << gen.from_ << "->" << gen.to_
        << " Enabled: " << (gen.enabled_ ? "True" : "False") << " Weight: " << gen.weight_ << ")";
