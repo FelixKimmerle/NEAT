@@ -4,6 +4,8 @@ An implementation of NeuroEvolution of Augmenting Topologies, following
 [Stanley & Miikkulainen, "Evolving Neural Networks through Augmenting Topologies" (2002)](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf),
 with interactive examples drawn with SFML 3.
 
+![A solved run of the circle example: the evolved network with four hidden nodes, and its decision region enclosing the inside points](images/circle.png)
+
 ## Build
 
 Requires CMake 3.24+ and a C++17 compiler. SFML is downloaded and built automatically
@@ -54,13 +56,21 @@ the selected sample, and a plot of what the network computes over the whole inpu
 
 ## Examples
 
-- **XOR** (section 4.2 of the paper). Needs at least one hidden node.
-  Over 100 runs: solved every time, on average after 65 generations with 4.4 hidden nodes
-  (paper: 32 generations, 2.35 hidden nodes).
-- **Circle**: classify the points of a 5x5 grid as inside or outside a circle. Every sigmoid
-  node can only cut the plane along a line, so the network needs several hidden nodes.
-  Over 30 runs: 27 solved within 1000 generations, on average after 290 generations with
-  5.8 hidden nodes and 27 connections.
+### XOR
+
+Section 4.2 of the paper. XOR cannot be computed without a hidden node.
+Over 100 runs: solved every time, on average after 65 generations with 4.4 hidden nodes
+(paper: 32 generations, 2.35 hidden nodes).
+
+![A solved XOR run with three hidden nodes](images/xor.png)
+
+### Circle
+
+Classify the points of a 5x5 grid as inside or outside a circle. Every sigmoid node can only
+cut the plane along a line, so the network needs several hidden nodes to enclose the inside.
+On this grid the inside points form a 3x3 block, so the learned region looks like a rounded square.
+Over 30 runs: 27 solved within 1000 generations, on average after 290 generations with
+5.8 hidden nodes and 27 connections (screenshot at the top).
 
 ## Code
 
